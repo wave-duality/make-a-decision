@@ -74,7 +74,6 @@ function animateCoin(result) {
   const PHASE2_END_DEG  = PHASE1_SPINS * 360 + EXTRA_SPINS * 360 + LAND_DEG;
 
   const wrapper = document.getElementById('coin-wrapper');
-  const status  = document.getElementById('flip-status');
   let start = null;
   coin.style.transform = 'rotateY(0deg)';
   wrapper.classList.add('spinning');
@@ -99,7 +98,6 @@ function animateCoin(result) {
       deg = phase1End + easeOutQuart(t) * (PHASE2_END_DEG - phase1End);
 
       if (t > 0.6) {
-        status.textContent = 'Landing…';
         wrapper.classList.remove('spinning');
       }
     }
@@ -110,7 +108,6 @@ function animateCoin(result) {
       requestAnimationFrame(frame);
     } else {
       coin.style.transform = `rotateY(${LAND_DEG}deg)`;
-      status.textContent = '';
       setTimeout(showResult, 500);
     }
   }
