@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oracle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --muted: #777;
+      --accent: #fff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* FAQ button — always visible */
+    #btn-faq {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+      z-index: 100;
+    }
+    #btn-faq:hover { border-color: #444; color: var(--text); }
+
+    /* FAQ Modal */
+    #faq-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      animation: fadeIn 0.2s ease;
+    }
+    #faq-overlay.open { display: flex; }
+
+    #faq-modal {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 48px 36px;
+      max-width: 300px;
+      width: 100%;
+      position: relative;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #faq-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+    #faq-close:hover { color: var(--text); }
+
+    .faq-verse {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 2;
+      text-align: center;
+      font-style: italic;
+      letter-spacing: 0.01em;
+    }
+    .faq-verse em {
+      color: var(--text);
+      font-style: normal;
+    }
+
+    /* APP */
+    #app {
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      animation: fadeIn 0.35s ease;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── INPUT ── */
+    .tagline {
+      font-size: 15px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .choices {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 17px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]::placeholder { color: #555; }
+    input[type="text"]:focus { border-color: #484848; }
+
+    .or-divider {
+      text-align: center;
+      font-size: 11px;
+      color: #484848;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .btn-flip {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 2px;
+    }
+    .btn-flip:disabled { opacity: 0.18; cursor: not-allowed; }
+    .btn-flip:not(:disabled):hover { background: #e8e8e8; }
+    .btn-flip:not(:disabled):active { transform: scale(0.98); }
+
+    /* ── COIN ── */
+    #coin-scene {
+      perspective: 900px;
+      padding: 20px;
+    }
+
+    #coin {
+      width: 150px;
+      height: 150px;
+      position: relative;
+      transform-style: preserve-3d;
+    }
+
+    .coin-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 18px;
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    /* Heads: bright white face */
+    .coin-face.heads {
+      background: radial-gradient(circle at 38% 35%, #ffffff, #d4d4d4);
+      color: #111;
+      box-shadow:
+        0 0 0 6px #b8b8b8,
+        0 0 0 8px #888,
+        0 20px 60px rgba(255,255,255,0.15),
+        inset 0 2px 4px rgba(255,255,255,0.8),
+        inset 0 -2px 4px rgba(0,0,0,0.15);
+    }
+
+    /* Tails: dark face */
+    .coin-face.tails {
+      background: radial-gradient(circle at 38% 35%, #2a2a2a, #111);
+      color: #ddd;
+      transform: rotateY(180deg);
+      box-shadow:
+        0 0 0 6px #1a1a1a,
+        0 0 0 8px #333,
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 2px 4px rgba(255,255,255,0.06),
+        inset 0 -2px 4px rgba(0,0,0,0.4);
+    }
+
+    /* Glow ring that pulses during spin */
+    #coin-glow {
+      position: absolute;
+      inset: -16px;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    #coin-scene {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #coin-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .spin-glow {
+      position: absolute;
+      inset: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #coin-wrapper.spinning .spin-glow { opacity: 1; }
+
+    .flip-status {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── RESULT ── */
+    .result-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .result-choice {
+      font-size: 30px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .countdown-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .countdown-bar-track {
+      width: 100%;
+      height: 1.5px;
+      background: #1e1e1e;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    #countdown-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--muted);
+      transform-origin: left;
+    }
+
+    .countdown-hint {
+      font-size: 12px;
+      color: #333;
+      letter-spacing: 0.04em;
+      transition: color 0.3s;
+    }
+
+    /* Vignette overlay */
+    #screen-result {
+      --vignette-opacity: 0;
+      position: relative;
+    }
+    #screen-result::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+      opacity: var(--vignette-opacity);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Shake */
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-4px); }
+      40%      { transform: translateX(4px); }
+      60%      { transform: translateX(-3px); }
+      80%      { transform: translateX(3px); }
+    }
+    .shaking { animation: shake 0.12s linear infinite; }
+
+    .action-buttons {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-action {
+      padding: 15px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+    .btn-action:active { transform: scale(0.97); }
+
+    .btn-keep {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+    .btn-keep:hover { background: #e8e8e8; }
+
+    .btn-again {
+      background: transparent;
+      color: var(--text);
+    }
+    .btn-again:hover { border-color: #3a3a3a; }
+
+    kbd {
+      display: inline-block;
+      font-size: 10px;
+      font-family: inherit;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 6px;
+      vertical-align: middle;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+    .btn-keep kbd {
+      background: rgba(0,0,0,0.12);
+      border-color: rgba(0,0,0,0.2);
+      color: #555;
+    }
+
+    /* ── FINAL ── */
+    .final-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .final-choice {
+      font-size: 34px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .final-note {
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    .btn-reset {
+      font-size: 13px;
+      color: #333;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      letter-spacing: 0.03em;
+      transition: color 0.2s;
+      margin-top: 4px;
+    }
+    .btn-reset:hover { color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- FAQ button -->
+<button id="btn-faq" title="How this works">?</button>
+
+<!-- FAQ Modal -->
+<div id="faq-overlay">
+  <div id="faq-modal">
+    <button id="faq-close">×</button>
+    <p class="faq-verse">
+      The coin is fake.<br>
+      <em>You are the oracle.</em>
+    </p>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- INPUT -->
+  <section id="screen-input" class="screen active">
+    <p class="tagline">Make up your mind.</p>
+    <div class="choices">
+      <input type="text" id="choice-a" placeholder="Choice A" maxlength="60" autocomplete="off">
+      <div class="or-divider">or</div>
+      <input type="text" id="choice-b" placeholder="Choice B" maxlength="60" autocomplete="off">
+    </div>
+    <button id="btn-flip" class="btn-flip" disabled>Flip</button>
+  </section>
+
+  <!-- FLIP -->
+  <section id="screen-flip" class="screen">
+    <div id="coin-scene">
+      <div id="coin-wrapper">
+        <div class="spin-glow"></div>
+        <div id="coin">
+          <div class="coin-face heads" id="face-heads"></div>
+          <div class="coin-face tails" id="face-tails"></div>
+        </div>
+      </div>
+    </div>
+    <p class="flip-status" id="flip-status">Flipping…</p>
+  </section>
+
+  <!-- RESULT -->
+  <section id="screen-result" class="screen">
+    <p class="result-label">The coin says</p>
+    <p class="result-choice" id="result-text"></p>
+    <div class="countdown-wrap">
+      <div class="countdown-bar-track">
+        <div id="countdown-bar"></div>
+      </div>
+      <p class="countdown-hint">Go with your gut</p>
+    </div>
+    <div class="action-buttons">
+      <button class="btn-action btn-again" id="btn-again">Flip again <kbd>←</kbd></button>
+      <button class="btn-action btn-keep" id="btn-keep">Keep it <kbd>→</kbd></button>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="screen-final" class="screen">
+    <p class="final-label">Your answer</p>
+    <p class="final-choice" id="final-text"></p>
+    <p class="final-note" id="final-note"></p>
+    <button class="btn-reset" id="btn-reset">Start over</button>
+  </section>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
